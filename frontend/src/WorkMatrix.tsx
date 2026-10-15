@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Row } from './app/types';
+import { today, number, fmt, fmtUnit, efficiencyText, efficiencyColor, key } from './features/matrix/utils';
 type Props = {
   lists: Record<string, Row[]>;
   token: string;
@@ -8,25 +9,6 @@ type Props = {
   allowedSections: number[];
   refresh: () => Promise<void>;
 };
-
-const today = () => {
-  const d = new Date();
-  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-};
-const number = (value: unknown) => Number(value) || 0;
-const fmt = (value: number) => value.toLocaleString('uk-UA', { maximumFractionDigits: 1 });
-const fmtUnit = (value: number) => value.toLocaleString('uk-UA', { maximumFractionDigits: 3 });
-const efficiencyDelta = (ratio: number | null) => ratio === null ? null : ratio - 100;
-const efficiencyText = (ratio: number | null) => {
-  const delta = efficiencyDelta(ratio);
-  return delta === null ? '—' : `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fmt(Math.abs(delta))}%`;
-};
-const efficiencyColor = (ratio: number | null) => {
-  const delta = efficiencyDelta(ratio);
-  return delta === null || Math.abs(delta) < 0.000001 ? 'inherit' : delta > 0 ? '#22c55e' : '#ef4444';
-};
-const key = (workId: number | string) => String(workId);
 
 export default function WorkMatrix({ lists, token, role, allowedSections, refresh }: Props) {
   const [contract, setContract] = useState('');
