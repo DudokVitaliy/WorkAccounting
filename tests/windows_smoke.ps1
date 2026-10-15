@@ -21,6 +21,7 @@ Write-Host 'PASS: PowerShell syntax and Windows desktop shortcut'
 $backend = Join-Path $root 'backend'
 $frontend = Join-Path $root 'frontend'
 $env:WORK_ADMIN_PASSWORD = 'Windows-CI-Only-Strong-Passphrase'
+$env:ASPNETCORE_URLS = 'http://127.0.0.1:5088'
 $apiProc = $null
 $webProc = $null
 try {
