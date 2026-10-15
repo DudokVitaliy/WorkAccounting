@@ -28,5 +28,5 @@
 - Finished work cannot be simply reduced through the daily endpoint.
 
 ## Verification status and proposed tests
-Stage 1 is primarily code movement and documentation. Build checks in `.github/workflows/ci.yml` verify .NET compilation and TypeScript/Vite production bundle. Integration and end-to-end tests are **not yet implemented**.
+Build checks in `.github/workflows/ci.yml` verify .NET compilation and the TypeScript/Vite production bundle. The isolated `tests/api_smoke.py` test verifies shared reads, section-scoped writes, same-date progress replacement, and transactional stock write-off. A comprehensive unit/integration and browser end-to-end test suite is **not yet implemented**.
 Do not claim production readiness until live environment validation and HTTPS deployment have been completed.
