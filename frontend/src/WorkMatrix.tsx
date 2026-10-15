@@ -26,27 +26,27 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const contracts = (lists.contracts || []) as ContractDto[];
-  const sections = (lists.sections || []) as SectionDto[];
-  const vehicles = useMemo(() => ((lists.vehicles || []) as VehicleDto[])
+  const contracts = (lists.contracts || []) as unknown as ContractDto[];
+  const sections = (lists.sections || []) as unknown as SectionDto[];
+  const vehicles = useMemo(() => ((lists.vehicles || []) as unknown as VehicleDto[])
     .filter(v => String(v.contract_id) === contract)
     .sort((a, b) => String(a.number).localeCompare(String(b.number), 'uk', { numeric: true })),
   [lists.vehicles, contract]);
 
-  const templates = useMemo(() => ((lists.contract_works || []) as ContractWorkDto[])
+  const templates = useMemo(() => ((lists.contract_works || []) as unknown as ContractWorkDto[])
     .filter(w => String(w.contract_id) === contract && String(w.section_id) === section),
   [lists.contract_works, contract, section]);
 
   const vehicleIds = useMemo(() => new Set(vehicles.map(v => String(v.id))), [vehicles]);
   const templateIds = useMemo(() => new Set(templates.map(t => String(t.id))), [templates]);
-  const works = useMemo(() => ((lists.works || []) as WorkDto[]).filter(w =>
+  const works = useMemo(() => ((lists.works || []) as unknown as WorkDto[]).filter(w =>
     vehicleIds.has(String(w.vehicle_id)) && templateIds.has(String(w.contract_work_id))),
   [lists.works, vehicleIds, templateIds]);
   const workMap = useMemo(() => new Map(works.map(w => [`${w.contract_work_id}:${w.vehicle_id}`, w])), [works]);
   const normMap = useMemo(() => new Map(templates.map(t => [String(t.id), number(t.norm_hours)])), [templates]);
   const workIdSet = useMemo(() => new Set(works.map(w => key(w.id))), [works]);
 
-  const dayRows = useMemo(() => ((lists.daily || []) as DailyDto[]).filter(r =>
+  const dayRows = useMemo(() => ((lists.daily || []) as unknown as DailyDto[]).filter(r =>
     r.date === date && workIdSet.has(key(r.work_id))), [lists.daily, date, workIdSet]);
   const dailyMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -54,7 +54,7 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
     return map;
   }, [dayRows]);
 
-  const hourRecord = useMemo(() => ((lists.section_daily_hours || []) as SectionDailyHoursDto[]).find(r =>
+  const hourRecord = useMemo(() => ((lists.section_daily_hours || []) as unknown as SectionDailyHoursDto[]).find(r =>
     String(r.contract_id) === contract && String(r.section_id) === section && r.date === date),
   [lists.section_daily_hours, contract, section, date]);
 
@@ -78,7 +78,7 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
   const dayNorm = dayRows.reduce((sum, r) => sum + number(r.norm_hours), 0);
   const dayHours = number(hourRecord?.hours);
   const dayEfficiency = dayHours > 0 ? dayNorm / dayHours * 100 : null;
-  const totalHours = ((lists.section_daily_hours || []) as SectionDailyHoursDto[]).filter(r =>
+  const totalHours = ((lists.section_daily_hours || []) as unknown as SectionDailyHoursDto[]).filter(r =>
     String(r.contract_id) === contract && String(r.section_id) === section)
     .reduce((sum, r) => sum + number(r.hours), 0);
   const totalEfficiency = totalHours > 0 ? completed / totalHours * 100 : null;

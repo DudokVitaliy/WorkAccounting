@@ -7,5 +7,5 @@ export function display(row: Row, key: string, lists: Record<string, Row[]>) {
   } if (key === 'progress')
     return <span className="progress-cell"><span className="bar"><span style={{ width: `${val}%` }} /></span><b>{Number(val).toFixed(0)}%</b></span>; if (key === 'active')
     return val ? 'Так' : 'Ні'; if (key === 'role')
-    return ({ Admin: 'Адмін', Manager: 'Керівник', Master: 'Майстер' } as Row)[val] || val; return val == null ? '—' : String(val);
+    return ({ Admin: 'Адмін', Manager: 'Керівник', Master: 'Майстер' } as Record<string, string>)[String(val)] || String(val); return val == null ? '—' : String(val);
 }
