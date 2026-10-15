@@ -1,6 +1,4 @@
-import type { Row } from '../app/types';
-
-export async function api(path: string, token: string, method = 'GET', data?: Row) {
+export async function api<TResponse = unknown>(path: string, token: string, method = 'GET', data?: object): Promise<TResponse> {
   const response = await fetch('/api' + path, {
     method,
     headers: {
@@ -14,9 +12,9 @@ export async function api(path: string, token: string, method = 'GET', data?: Ro
     throw new Error(text.slice(0, 350) || `HTTP ${response.status}`);
   }
   if (!text.trim())
-    return {};
+    return {} as TResponse;
   try {
-    return JSON.parse(text);
+    return JSON.parse(text) as TResponse;
   }
   catch {
     throw new Error(`Сервер повернув некоректний JSON: ${path}`);

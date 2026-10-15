@@ -10,6 +10,7 @@ import { display } from './components/display';
 import { definitions, nav, type Page } from './app/config';
 import { api } from './lib/api';
 import type { Row, Session } from './app/types';
+import type { SummaryDto, ContractReportDto, DailyReportDto, MaterialReportDto, BulkVehiclesResponseDto, BulkWorksResponseDto } from './app/dto';
 const initialDate = () => new Date().toLocaleDateString('sv-SE');
 export default function App() {
   const [session, setSession] = useState<Session | null>(() => {
@@ -22,10 +23,10 @@ export default function App() {
   });
   const [page, setPage] = useState<Page>('dashboard');
   const [lists, setLists] = useState<Record<string, Row[]>>({});
-  const [summary, setSummary] = useState<Row>({});
-  const [contractReport, setContractReport] = useState<Row[]>([]);
-  const [dailyReport, setDailyReport] = useState<Row[]>([]);
-  const [materialReport, setMaterialReport] = useState<Row[]>([]);
+  const [summary, setSummary] = useState<SummaryDto>({contracts:0,vehicles:0,works:0,completed:0,todayHours:0,totalHours:0,writtenOff:0});
+  const [contractReport, setContractReport] = useState<ContractReportDto[]>([]);
+  const [dailyReport, setDailyReport] = useState<DailyReportDto[]>([]);
+  const [materialReport, setMaterialReport] = useState<MaterialReportDto[]>([]);
   const [form, setForm] = useState<Row>({});
   const [editing, setEditing] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -55,7 +56,7 @@ export default function App() {
     if (!session)
       return; setLoading(true); try {
         const entityNames = ['contracts', 'vehicles', 'sections', 'contract_works', 'works', 'materials', 'work_materials', 'daily', 'section_daily_hours', 'movements', ...(session.role === 'Admin' ? ['users', 'user_sections'] : [])];
-        const [rows, sum, cr, dr, mr, access] = await Promise.all([Promise.all(entityNames.map(k => api('/' + k, session.token))), api('/report/summary', session.token), api('/report/contracts', session.token), api('/report/daily', session.token), api('/report/materials', session.token), api('/auth/sections', session.token)]);
+        const [rows, sum, cr, dr, mr, access] = await Promise.all([Promise.all(entityNames.map(k => api<Row[]>('/' + k, session.token))), api<SummaryDto>('/report/summary', session.token), api<ContractReportDto[]>('/report/contracts', session.token), api<DailyReportDto[]>('/report/daily', session.token), api<MaterialReportDto[]>('/report/materials', session.token), api<number[]>('/auth/sections', session.token)]);
         setAllowedSections(access.map(Number));
         setLists(Object.fromEntries(entityNames.map((k, i) => [k, rows[i]])));
         setSummary(sum);
@@ -77,7 +78,7 @@ export default function App() {
   }, [session]);
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault(); try {
-      const s = await api('/auth/login', '', 'POST', { login, password });
+      const s = await api<Session>('/auth/login', '', 'POST', { login, password });
       sessionStorage.setItem('wa_session', JSON.stringify(s));
       setSession(s);
       setPassword('');
@@ -142,7 +143,7 @@ export default function App() {
     if (!numbers.length || !bulkContract) { setError('Оберіть контракт і введіть номери'); return; }
     try {
       setLoading(true);
-      const result = await api('/vehicles/bulk', session.token, 'POST', { contract_id: Number(bulkContract), numbers });
+      const result = await api<BulkVehiclesResponseDto>('/vehicles/bulk', session.token, 'POST', { contract_id: Number(bulkContract), numbers });
       setBulkResult(result);
       setBulkNumbers([{ id: 1, number: '' }]);
       setBulkNextId(2);
@@ -187,7 +188,7 @@ export default function App() {
     }
     try {
       setLoading(true);
-      const result = await api('/contract-works/bulk', session.token, 'POST', {
+      const result = await api<BulkWorksResponseDto>('/contract-works/bulk', session.token, 'POST', {
         contract_id: Number(worksContract), section_id: Number(worksSection),
         works: rows.map(r => ({ name: r.name.trim(), norm_hours: Number(r.norm_hours.replace(',', '.')), description: r.description.trim() }))
       });

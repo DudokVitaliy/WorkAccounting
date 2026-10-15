@@ -1,6 +1,6 @@
 import { DataTable } from '../../components/DataTable';
 import { csv } from '../../lib/csv';
-import type { Row } from '../../app/types';
+import type { SummaryDto, ContractReportDto, DailyReportDto, MaterialReportDto } from '../../app/dto';
 
 type Props = { summary: Row; contractReport: Row[]; dailyReport: Row[]; materialReport: Row[] };
 export default function ReportsPage({summary,contractReport,dailyReport,materialReport}: Props) {

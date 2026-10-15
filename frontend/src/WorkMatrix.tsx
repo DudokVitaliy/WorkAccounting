@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Row } from './app/types';
+import { api } from './lib/api';
+import type { ContractDto, VehicleDto, SectionDto, ContractWorkDto, WorkDto, DailyDto, SectionDailyHoursDto, SectionReportRequestDto, SectionReportResponseDto } from './app/dto';
 import { today, number, fmt, fmtUnit, efficiencyText, efficiencyColor, key } from './features/matrix/utils';
 type Props = {
   lists: Record<string, Row[]>;
@@ -21,27 +23,27 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const contracts = lists.contracts || [];
-  const sections = lists.sections || [];
-  const vehicles = useMemo(() => (lists.vehicles || [])
+  const contracts = (lists.contracts || []) as ContractDto[];
+  const sections = (lists.sections || []) as SectionDto[];
+  const vehicles = useMemo(() => ((lists.vehicles || []) as VehicleDto[])
     .filter(v => String(v.contract_id) === contract)
     .sort((a, b) => String(a.number).localeCompare(String(b.number), 'uk', { numeric: true })),
   [lists.vehicles, contract]);
 
-  const templates = useMemo(() => (lists.contract_works || [])
+  const templates = useMemo(() => ((lists.contract_works || []) as ContractWorkDto[])
     .filter(w => String(w.contract_id) === contract && String(w.section_id) === section),
   [lists.contract_works, contract, section]);
 
   const vehicleIds = useMemo(() => new Set(vehicles.map(v => String(v.id))), [vehicles]);
   const templateIds = useMemo(() => new Set(templates.map(t => String(t.id))), [templates]);
-  const works = useMemo(() => (lists.works || []).filter(w =>
+  const works = useMemo(() => ((lists.works || []) as WorkDto[]).filter(w =>
     vehicleIds.has(String(w.vehicle_id)) && templateIds.has(String(w.contract_work_id))),
   [lists.works, vehicleIds, templateIds]);
   const workMap = useMemo(() => new Map(works.map(w => [`${w.contract_work_id}:${w.vehicle_id}`, w])), [works]);
   const normMap = useMemo(() => new Map(templates.map(t => [String(t.id), number(t.norm_hours)])), [templates]);
   const workIdSet = useMemo(() => new Set(works.map(w => key(w.id))), [works]);
 
-  const dayRows = useMemo(() => (lists.daily || []).filter(r =>
+  const dayRows = useMemo(() => ((lists.daily || []) as DailyDto[]).filter(r =>
     r.date === date && workIdSet.has(key(r.work_id))), [lists.daily, date, workIdSet]);
   const dailyMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -49,7 +51,7 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
     return map;
   }, [dayRows]);
 
-  const hourRecord = useMemo(() => (lists.section_daily_hours || []).find(r =>
+  const hourRecord = useMemo(() => ((lists.section_daily_hours || []) as SectionDailyHoursDto[]).find(r =>
     String(r.contract_id) === contract && String(r.section_id) === section && r.date === date),
   [lists.section_daily_hours, contract, section, date]);
 
@@ -73,7 +75,7 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
   const dayNorm = dayRows.reduce((sum, r) => sum + number(r.norm_hours), 0);
   const dayHours = number(hourRecord?.hours);
   const dayEfficiency = dayHours > 0 ? dayNorm / dayHours * 100 : null;
-  const totalHours = (lists.section_daily_hours || []).filter(r =>
+  const totalHours = ((lists.section_daily_hours || []) as SectionDailyHoursDto[]).filter(r =>
     String(r.contract_id) === contract && String(r.section_id) === section)
     .reduce((sum, r) => sum + number(r.hours), 0);
   const totalEfficiency = totalHours > 0 ? completed / totalHours * 100 : null;
@@ -91,7 +93,7 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
       setError('Вкажіть фактично витрачені людино-години (0, якщо витрат не було).');
       return;
     }
-    const payload = [];
+    const payload: SectionReportRequestDto['entries'] = [];
     for (const w of works) {
       const raw = entries[key(w.id)] ?? '';
       const unit = raw.trim() === '' ? 0 : Number(raw.replace(',', '.'));
@@ -108,13 +110,10 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
     setError('');
     setMessage('');
     try {
-      const response = await fetch('/api/section-report', {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contract_id: number(contract), section_id: number(section), date, hours: h, entries: payload }),
-      });
-      const text = await response.text();
-      if (!response.ok) throw new Error(text.slice(0, 450) || `HTTP ${response.status}`);
+      const request: SectionReportRequestDto = {
+        contract_id: number(contract), section_id: number(section), date, hours: h, entries: payload
+      };
+      await api<SectionReportResponseDto>('/section-report', token, 'PUT', request);
       await refresh();
       setMessage('Щоденний звіт збережено.');
     } catch (e) {
