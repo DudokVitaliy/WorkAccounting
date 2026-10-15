@@ -3,7 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Row } from './app/types';
 import { api } from './lib/api';
 import type { ContractDto, VehicleDto, SectionDto, ContractWorkDto, WorkDto, DailyDto, SectionDailyHoursDto, SectionReportRequestDto, SectionReportResponseDto } from './app/dto';
-import { today, number, fmt, fmtUnit, efficiencyText, efficiencyColor, key } from './features/matrix/utils';
+import { today, number, fmt, efficiencyText, efficiencyColor, key } from './features/matrix/utils';
+import MatrixFilters from './features/matrix/MatrixFilters';
+import MatrixGrid from './features/matrix/MatrixGrid';
+import ProductionSummary from './features/matrix/ProductionSummary';
 type Props = {
   lists: Record<string, Row[]>;
   token: string;
@@ -125,23 +128,7 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
 
   return (
     <div className="matrix-page" style={{ display: 'grid', gap: 18 }}>
-      <section className="panel matrix-controls" style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
-        <label>Контракт
-          <select value={contract} onChange={e => { setContract(e.target.value); setSection(''); }}>
-            <option value="">Оберіть контракт</option>
-            {contracts.map(c => <option key={c.id} value={c.id}>{c.code ? `${c.code} — ` : ''}{c.name}</option>)}
-          </select>
-        </label>
-        <label>Дільниця
-          <select value={section} disabled={!contract} onChange={e => setSection(e.target.value)}>
-            <option value="">Оберіть дільницю</option>
-            {sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </label>
-        <label>Дата щоденного звіту
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-        </label>
-      </section>
+      <MatrixFilters contracts={contracts} sections={sections} contract={contract} section={section} date={date} onContract={value => { setContract(value); setSection(''); }} onSection={setSection} onDate={setDate} />
 
       {!hasSelection ? <section className="panel empty">Оберіть контракт і дільницю.</section> : <>
         <section className="panel">
@@ -152,36 +139,7 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
             <div className="stat-card"><span>Ефективність за день</span><strong style={{ color: efficiencyColor(dayEfficiency) }}>{efficiencyText(dayEfficiency)}</strong></div>
           </div>
           <p style={{ marginTop: 12 }}>У матриці вводиться <b>частка виконання за вибрану дату</b>: 0,5 = половина роботи, 1 = повністю. Порожня клітинка означає 0.</p>
-          <div className="matrix-scroll">
-            <table className="matrix-table">
-              <thead><tr><th className="matrix-sticky">Робота / Автомобіль</th>{vehicles.map(v => <th key={v.id}>№ {v.number}</th>)}</tr></thead>
-              <tbody>
-                {templates.map(t => <tr key={t.id}>
-                  <th className="matrix-sticky">{t.name}<div style={{ fontSize: 12, opacity: .65 }}>Норма: {fmt(number(t.norm_hours))} год</div></th>
-                  {vehicles.map(v => {
-                    const w = workMap.get(`${t.id}:${v.id}`);
-                    if (!w) return <td key={v.id}>—</td>;
-                    const previous = dailyMap.get(key(w.id)) || 0;
-                    const available = Math.max(0, (100 - number(w.progress) + previous) / 100);
-                    return <td key={v.id} style={{ minWidth: 100 }}>
-                      <input aria-label={`${t.name}, авто ${v.number}`} type="text" inputMode="decimal"
-                        disabled={!canEdit || busy} placeholder="0" style={{ width: '100%', minWidth: 78 }}
-                        value={entries[key(w.id)] ?? ''}
-                        onChange={e => setEntries(old => ({ ...old, [key(w.id)]: e.target.value }))} />
-                      <div style={{ fontSize: 11, opacity: .7 }}>Всього: {fmtUnit(number(w.progress) / 100)} / 1 · доступно {fmtUnit(available)}</div>
-                    </td>;
-                  })}
-                </tr>)}
-                {templates.length > 0 && <tr className="matrix-total"><th className="matrix-sticky">Поточне виконання по авто</th>
-                  {vehicles.map(v => {
-                    const items = works.filter(w => String(w.vehicle_id) === String(v.id));
-                    const plan = items.reduce((s, w) => s + (normMap.get(String(w.contract_work_id)) || 0), 0);
-                    const done = items.reduce((s, w) => s + (normMap.get(String(w.contract_work_id)) || 0) * number(w.progress) / 100, 0);
-                    return <td key={v.id}><b>{plan ? fmtUnit(done / plan) : '0'} / 1</b></td>;
-                  })}</tr>}
-              </tbody>
-            </table>
-          </div>
+          <MatrixGrid vehicles={vehicles} templates={templates} works={works} workMap={workMap} normMap={normMap} dailyMap={dailyMap} entries={entries} onEntryChange={(id, value) => setEntries(old => ({ ...old, [key(id)]: value }))} canEdit={canEdit} busy={busy} />
           {templates.length === 0 && <div className="empty">Для дільниці ще немає робіт за цим контрактом.</div>}
           <div className="matrix-savebar">
             <label className="matrix-hours-field">
@@ -197,29 +155,7 @@ export default function WorkMatrix({ lists, token, role, allowedSections, refres
           {message && <p role="status" style={{ marginTop: 12 }}>{message}</p>}
         </section>
 
-        <section className="panel">
-          <div className="panel-title"><div><h3>Поточний стан контракту на дільниці</h3><p>Завжди актуальні дані, незалежно від дати звіту</p></div></div>
-          <div className="stat-grid compact">
-            <div className="stat-card"><span>Плановий обсяг</span><strong>{fmt(planned)} н-год</strong></div>
-            <div className="stat-card"><span>Виконано</span><strong>{fmt(completed)} н-год</strong></div>
-            <div className="stat-card"><span>Залишок</span><strong>{fmt(remaining)} н-год</strong></div>
-            <div className="stat-card"><span>Прогрес</span><strong>{fmt(progress)}%</strong></div>
-            <div className="stat-card"><span>Витрачено всього</span><strong>{fmt(totalHours)} л-год</strong></div>
-            <div className="stat-card"><span>Накопичена ефективність</span><strong style={{ color: efficiencyColor(totalEfficiency) }}>{efficiencyText(totalEfficiency)}</strong></div>
-          </div>
-          <div className="big-bar" style={{ marginTop: 14 }}><span style={{ width: `${Math.min(100, progress)}%` }} /></div>
-          <div style={{ marginTop: 18 }}>
-            <h3>Прогноз завершення</h3>
-            <label>Працівників на дільниці
-              <input type="number" min="1" step="1" value={workers} onChange={e => setWorkers(e.target.value)} />
-            </label>
-            <div className="stat-grid compact" style={{ marginTop: 12 }}>
-              <div className="stat-card"><span>Зміна 8 годин</span><strong>{forecast(8)} змін</strong></div>
-              <div className="stat-card"><span>Зміна 11 годин</span><strong>{forecast(11)} змін</strong></div>
-            </div>
-            <p>Прогноз враховує поточний залишок, кількість працівників і накопичену ефективність. Якщо немає фактичних витрат або виконання — прогноз недоступний. Це робочі зміни, не календарні дні.</p>
-          </div>
-        </section>
+        <ProductionSummary planned={planned} completed={completed} remaining={remaining} progress={progress} totalHours={totalHours} totalEfficiency={totalEfficiency} workers={workers} setWorkers={setWorkers} forecast={forecast} />
       </>}
     </div>
   );
