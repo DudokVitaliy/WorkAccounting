@@ -6,7 +6,7 @@ if (-not (Test-Path $launch)) { throw 'Не знайдено windows/launch.ps1'
 if (-not (Test-Path $DesktopPath)) { New-Item -Path $DesktopPath -ItemType Directory -Force | Out-Null }
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut((Join-Path $DesktopPath 'WorkAccounting.lnk'))
-$shortcut.TargetPath = (Join-Path $PSHOME 'powershell.exe')
+$shortcut.TargetPath = (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe')
 $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$launch`""
 $shortcut.WorkingDirectory = $root
 $shortcut.Description = 'УкрАрмоТех — локальна система обліку робіт'

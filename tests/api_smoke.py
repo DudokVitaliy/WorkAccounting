@@ -129,12 +129,27 @@ def main():
                 assert final["progress"] == 100, final
                 material = next(m for m in expect(api, "GET", "/api/materials", admin) if m["id"] == mat)
                 assert material["balance"] == 1, material
+                # Manager role is read-only, but can inspect all shared reports.
+                manager_id = expect(api, "POST", "/api/users", admin,
+                                    {"login": "manager_ci", "password": "manager-local-ci-password",
+                                     "role": "Manager"})["id"]
+                assert manager_id > 0
+                manager = expect(api, "POST", "/api/auth/login",
+                                 body={"login": "manager_ci", "password": "manager-local-ci-password"})["token"]
+                expect(api, "GET", "/api/report/contracts", manager)
+                expect(api, "PUT", "/api/section-report", manager, snapshot(s1, 0, 3), 403)
+                # Unauthorized requests and invalid bearer token must never reveal data.
+                expect(api, "GET", "/api/contracts", status=401)
+                expect(api, "GET", "/api/contracts", "invalid-bearer", status=401)
+                # Explicitly revoked session is not valid after logout.
+                expect(api, "POST", "/api/auth/logout", manager)
+                expect(api, "GET", "/api/report/contracts", manager, status=401)
                 # Login brute-force protection: requests beyond the configured eight/minute return 429.
                 attempts = [api("POST", "/api/auth/login",
                                 body={"login": "admin", "password": "bad password"})[0]
                             for _ in range(12)]
                 assert 429 in attempts, attempts
-                print("PASS: shared reads, scoped writes, same-day replacement, atomic stock, login rate limiting")
+                print("PASS: shared reads, scoped writes, manager read-only, session revocation, same-day replacement, atomic stock, login rate limiting")
             except Exception:
                 print("--- SERVER OUTPUT ---")
                 print(logfile.read_text(encoding="utf-8")[-12000:])
