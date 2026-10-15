@@ -28,7 +28,16 @@ backend/
     Persistence/
       Schema.cs                   # Allowlist таблиць/полів API
       SqliteStore.cs              # SQLite schema, DAO, транзакційні методи
-  [наступні етапи] Endpoints/, Services/, Validation/
+  Application/
+    ApiSupport.cs                 # API helper methods
+  Endpoints/
+    AuthEndpoints.cs              # Login and user-section assignments
+    EntityEndpoints.cs            # Generic CRUD routes
+    BulkEndpoints.cs              # Bulk import endpoints
+    InventoryEndpoints.cs         # Stock receipts
+    ReportEndpoints.cs            # Production reporting
+    ProgressEndpoints.cs          # Daily snapshot writes
+  [наступні етапи] Services/, Validation/
 frontend/
   src/
     App.tsx                       # Кореневий UI / навігація
@@ -38,10 +47,16 @@ frontend/
       types.ts                    # Типи UI й сесії
     lib/
       api.ts                      # HTTP-клієнт
-    components/                   # Виділені компоненти наступних етапів
+      csv.ts                      # Експорт CSV
+    components/
+      DataTable.tsx               # Табличний вивід
+      display.tsx                 # Відображення значень
+    features/matrix/utils.ts      # Розрахунки й форматування матриці
 docs/
   ARCHITECTURE.md
   AUDIT.md
+tests/
+  api_smoke.py                    # Регресійні HTTP-перевірки на тимчасовій SQLite
 .github/workflows/
   ci.yml
 ```
