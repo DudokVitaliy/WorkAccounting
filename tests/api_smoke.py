@@ -129,7 +129,12 @@ def main():
                 assert final["progress"] == 100, final
                 material = next(m for m in expect(api, "GET", "/api/materials", admin) if m["id"] == mat)
                 assert material["balance"] == 1, material
-                print("PASS: shared reads, scoped writes, day replacement, 100% progress, atomic inventory rollback/write-off")
+                # Login brute-force protection: requests beyond the configured eight/minute return 429.
+                attempts = [api("POST", "/api/auth/login",
+                                body={"login": "admin", "password": "bad password"})[0]
+                            for _ in range(12)]
+                assert 429 in attempts, attempts
+                print("PASS: shared reads, scoped writes, same-day replacement, atomic stock, login rate limiting")
             except Exception:
                 print("--- SERVER OUTPUT ---")
                 print(logfile.read_text(encoding="utf-8")[-12000:])

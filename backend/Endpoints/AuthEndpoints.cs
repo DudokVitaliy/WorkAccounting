@@ -14,7 +14,7 @@ internal static class AuthEndpoints
         var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         s.Exec("INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(@t,@u,@e)", ("@t", Hash(token)), ("@u", user["id"]), ("@e", DateTimeOffset.UtcNow.AddHours(12).ToUnixTimeSeconds()));
         return Results.Ok(new { token, login = user["login"], role = user["role"] });
-    });
+    }).RequireRateLimiting("login");
     app.MapGet("/api/auth/me", (HttpContext h, Store s) => Current(h, s) is { } u ? Results.Ok(new { u.Id, u.Login, u.Role, sections = AllowedSections(u, s) }) : Results.Unauthorized());
     app.MapPost("/api/auth/logout", (HttpContext h, Store s) => { var t = Token(h); if (t is not null) s.Exec("DELETE FROM sessions WHERE token_hash=@t", ("@t", Hash(t))); return Results.Ok(); });
     
