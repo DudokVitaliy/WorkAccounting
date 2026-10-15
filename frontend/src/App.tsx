@@ -45,13 +45,13 @@ export default function App() {
   const [bulkContract, setBulkContract] = useState('');
   const [bulkNumbers, setBulkNumbers] = useState<{ id: number; number: string }[]>([{ id: 1, number: '' }]);
   const [bulkNextId, setBulkNextId] = useState(2);
-  const [bulkResult, setBulkResult] = useState<{ added: number; skipped: number; skippedNumbers: string[] } | null>(null);
+  const [bulkResult, setBulkResult] = useState<BulkVehiclesResponseDto | null>(null);
   const [worksOpen, setWorksOpen] = useState(false);
   const [worksContract, setWorksContract] = useState('');
   const [worksSection, setWorksSection] = useState('');
   const [workRows, setWorkRows] = useState<{id:number;name:string;norm_hours:string;description:string}[]>([{id:1,name:'',norm_hours:'',description:''}]);
   const [worksNextId, setWorksNextId] = useState(2);
-  const [worksResult, setWorksResult] = useState<{added:number;skipped:number;skippedNames:string[]} | null>(null);
+  const [worksResult, setWorksResult] = useState<BulkWorksResponseDto | null>(null);
   const [worksError, setWorksError] = useState('');
   const [allowedSections, setAllowedSections] = useState<number[]>([]);
   const [accessUser, setAccessUser] = useState<Row | null>(null);
