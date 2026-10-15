@@ -1,0 +1,29 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/admin-password.txt
+
+# Visual Studio / .NET
+.vs/
+bin/
+obj/
+*.user
+*.suo
+
+# Frontend
+node_modules/
+dist/
+build/
+.next/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
