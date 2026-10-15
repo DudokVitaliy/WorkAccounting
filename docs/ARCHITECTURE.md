@@ -68,3 +68,29 @@ tests/
 - Перед інтеграцією: `dotnet build backend/WorkAccounting.Api.csproj`, `npm ci --prefix frontend`, `npm run build --prefix frontend`.
 - Перевіряти вручну: логін, CRUD контрактів, роботу матриці, повторне збереження тієї самої дати, обмеження майстра **на запис**, завершення 100% зі списанням ТМЦ, експорт CSV.
 - Не вважати статичний аудит підтвердженим penetration test.
+
+## Оновлена структура другого етапу
+
+```text
+frontend/src/
+  app/dto.ts                            # Контракти API й типи відповідей
+  app/types.ts                          # Динамічні CRUD поля (unknown)
+  components/{DataTable,display}.tsx
+  features/
+    dashboard/DashboardPage.tsx
+    reports/ReportsPage.tsx
+    admin/{EntityTable,EntityEditorDialog,BulkWorksDialog,BulkVehiclesDialog}.tsx
+    matrix/{MatrixFilters,MatrixGrid,ProductionSummary,utils}.tsx
+    inventory/ReceiptDialog.tsx
+  lib/{api,csv}.ts
+windows/
+  launch.ps1                            # Відкриває сайт в Edge --app
+  install-shortcut.ps1                  # Створює WorkAccounting.lnk
+install-shortcut.bat
+tests/
+  api_smoke.py
+  frontend_utils.test.mjs
+  windows_smoke.ps1
+```
+
+Залишаються локальними `http://127.0.0.1:5088` (API) та `http://127.0.0.1:5173` (UI). `AllowedHosts` включає `localhost` і `127.0.0.1` для proxy. Без окремої захищеної схеми розгортання сервер не можна відкривати в зовнішню мережу.

@@ -30,3 +30,16 @@
 ## Verification status and proposed tests
 Build checks in `.github/workflows/ci.yml` verify .NET compilation and the TypeScript/Vite production bundle. The isolated `tests/api_smoke.py` test verifies shared reads, section-scoped writes, same-date progress replacement, and transactional stock write-off. A comprehensive unit/integration and browser end-to-end test suite is **not yet implemented**.
 Do not claim production readiness until live environment validation and HTTPS deployment have been completed.
+
+## 2026-10-15 — результат другого етапу
+
+- **Погоджені бізнес-правила збережено:** майстер читає загальні виробничі дані; редагує лише закріплені дільниці; повторне внесення за дату замінює денний запис.
+- **Захист входу:** обмеження до 8 спроб на IP за 60 секунд на `/api/auth/login`; сесія відкликається під час виходу. Ліміти потрібно адаптувати до реального проксі та кількості користувачів.
+- **Залежності:** оновлено `Microsoft.Data.Sqlite` до `10.0.13`. Попередня версія тягнула вразливий `SQLitePCLRaw.lib.e_sqlite3 2.1.11` (GHSA-2m69-gcr7-jv3q).
+- **База даних:** назва `workaccounting_v2.db` і механізм щоденних знімків не змінені.
+- **Frontend:** типізовані DTO контрактів, технічних робіт, транспорту, матеріалів, користувачів, звітів, авторизації, bulk-відповідей та запитів прогресу; невідомі поля у загальному CRUD мають тип `unknown`, а не `any`.
+- **Компоненти:** окремі модулі dashboard, reports, admin tables/edit dialogs, bulk dialogs, inventory receipt, matrix filters/grid/summary.
+- **Тести:** ізольований HTTP smoke перевіряє ролі, logout, заміну денної готовності, списання ТМЦ та rate limit; є тести чистих JS/TS-функцій матриці.
+- **Windows:** додано створення ярлика і перевірку PowerShell/HTTP у GitHub Actions; актуальний результат Windows job необхідно перевіряти на HEAD-коміті перед оголошенням готовності.
+
+**Залишкові ризики:** немає наскрізної browser-e2e перевірки сценаріїв усіх форм, повного контрактно-складського property testing, автоматичного резервування SQLite чи безпечного HTTPS-розгортання в LAN. Поточний запуск розрахований на `127.0.0.1` і роботу на одному ПК.
