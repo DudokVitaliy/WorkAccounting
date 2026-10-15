@@ -1,0 +1,49 @@
+name: Build checks
+on:
+  push:
+    branches: ["refactor/**", "AI_changes"]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  backend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build backend/WorkAccounting.Api.csproj --configuration Release
+      - name: API regression smoke (isolated SQLite)
+        run: python3 tests/api_smoke.py
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: npm run build --prefix frontend
+      - name: Matrix utility tests
+        run: node --experimental-strip-types --test tests/frontend_utils.test.mjs
+
+  windows-launcher:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: dotnet build backend/WorkAccounting.Api.csproj --configuration Release
+      - run: npm ci --prefix frontend
+      - name: Validate desktop shortcut and Windows HTTP startup
+        shell: pwsh
+        run: ./tests/windows_smoke.ps1
