@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-type Row = Record<string, any>;
+import type { Row } from './app/types';
 type Props = {
   lists: Record<string, Row[]>;
   token: string;
